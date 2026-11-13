@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Darul Huffaz Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f6f3;--card:#fff;--tx:#14251f;--mu:#5d6f66;--pr:#0f5a45;--on:#fff;--soft:#dcece4;--go:#a77c12;--bd:#d9e3dd;--rd:#b23a2a;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1613;--card:#17221d;--tx:#e6efe9;--mu:#93a69b;--pr:#52b896;--on:#08150f;--soft:#1d3329;--go:#d9b44f;--bd:#27382f;--rd:#ea8372;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+h1,h2,h3{font-family:Amiri,Georgia,serif;margin:0 0 .4em;line-height:1.2}
+h1{font-size:1.7rem}h2{font-size:1.35rem;margin-top:14px}h3{font-size:1.1rem}
+.wrap{max-width:900px;margin:0 auto;padding:0 14px 40px}
+header{background:var(--pr);color:var(--on);padding:12px 14px}
+header .in{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-family:Amiri,Georgia,serif;font-size:1.25rem;font-weight:700}
+.who{font-size:.8rem;text-align:right}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--bd);background:var(--card);border-radius:8px;padding:7px 12px;min-height:38px}
+header button{color:var(--tx)}
+button.pri{background:var(--pr);color:var(--on);border-color:var(--pr)}
+button.dng{color:var(--rd);border-color:var(--rd)}
+button.sm{min-height:32px;padding:4px 10px;font-size:.85rem}
+button.on{background:var(--soft);border-color:var(--pr);font-weight:600}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+input,select,textarea{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;min-height:38px;max-width:100%}
+.tabs,.chips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 6px}
+.tabs button,.chips button{white-space:nowrap;border-radius:20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.grid .card{margin:0}
+.stat{font-family:Amiri,Georgia,serif;font-size:1.9rem;line-height:1;color:var(--pr)}
+.mu{color:var(--mu);font-size:.85rem}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:4px 0}
+.bar{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin:2px 0 8px}
+.bar i{display:block;height:100%;background:var(--pr)}
+.tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:10px;background:var(--soft)}
+.tag.u{background:var(--rd);color:var(--on)}.tag.g{background:var(--go);color:var(--on)}
+.f{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.f input,.f textarea{flex:1 1 150px}
+.dt{min-width:52px;text-align:center;border:1px solid var(--go);border-radius:8px;padding:4px;color:var(--go);font-weight:700;line-height:1.2}
+.ev{display:flex;gap:12px;align-items:center}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.85rem;z-index:9}
+.login{max-width:420px;margin:30px auto}
+hr{border:0;border-top:1px solid var(--bd);margin:10px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL="https://bxqxaznbqftmpdotsrrd.supabase.co";
+const SUPABASE_KEY="sb_publishable_uy7sCn0rDA4JhS92FiqhLA_WQa0kaqw";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=i=>document.getElementById(i);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today=()=>new Date().toLocaleDateString("en-CA");
+const ROLES=["admin","principal","teacher","parent","student"];
+const TABS={admin:[["home","Overview"],["users","Users"],["classes","Classes"],["students","Students"],["notices","Notices and events"],["audit","Audit log"]],principal:[["home","Overview"],["users","Teachers"],["students","Students"],["notices","Notices and events"]],teacher:[["home","My class"],["notices","Notices and events"]],parent:[["home","My children"],["notices","Notices and events"]],student:[["home","My progress"],["notices","Notices and events"]]};
+let U=null,P=null,D={},tab="home",child="all",mode="in",amsg="";
+
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
+async function run(p,ok){const{error}=await p;if(error)return toast("Error: "+error.message);await load();render();toast(ok||"Saved")}
+
+async function boot(){const{data:{session}}=await sb.auth.getSession();
+if(!session){U=null;P=null;return render()}
+U=session.user;const{data}=await sb.from("profiles").select("*").eq("id",U.id).maybeSingle();P=data;
+if(P&&P.status==="active")await load();render()}
+sb.auth.onAuthStateChange(e=>{if(e==="SIGNED_OUT"){U=null;P=null;render()}});
+
+async function load(){const g=async(t,f)=>{let q=sb.from(t).select("*");if(f)q=f(q);const{data}=await q;return data||[]};
+const adm=P.role==="admin";
+[D.cls,D.stu,D.att,D.res,D.hf,D.fee,D.ann,D.ev,D.asg,D.ps,D.prof,D.aud]=await Promise.all([g("classes"),g("students"),g("attendance"),g("results"),g("hifz_logs",q=>q.order("date",{ascending:false})),g("fees"),g("announcements",q=>q.order("created_at",{ascending:false})),g("events",q=>q.order("starts_at")),g("assignments"),g("parent_students"),g("profiles"),adm?g("audit_log",q=>q.order("at",{ascending:false}).limit(50)):Promise.resolve([])]);if(adm){const r=await fn({action:"list"});D.mail=r.users?Object.fromEntries(r.users.map(u=>[u.id,u.email])):null}}
+
+/* ---------- login and sign-up ---------- */
+function authView(){return `<div class="wrap login"><h1>Darul Huffaz Academy</h1>
+<div class="chips"><button class="${mode==="in"?"on":""}" onclick="mode='in';amsg='';render()">Log in</button><button class="${mode==="up"?"on":""}" onclick="mode='up';amsg='';render()">Create account</button></div>
+<div class="card">${amsg?`<p style="color:var(--go);font-weight:600;margin-top:0">${esc(amsg)}</p>`:""}
+${mode==="in"?`<h3>Log in</h3><div class="f"><input id="le" type="email" placeholder="Email" style="flex:1 1 100%" autocomplete="username"><input id="lp" type="password" placeholder="Password" style="flex:1 1 100%" autocomplete="current-password"><button class="pri" style="flex:1 1 100%" onclick="doLogin()">Log in</button></div><p style="margin-bottom:0"><button class="sm" onclick="forgot()">Forgot password?</button></p>`
+:`<h3>Create account</h3><p class="mu">Your account is checked by the academy before it is activated. The academy sets your role (parent, teacher or student).</p><div class="f"><input id="sn" placeholder="Full name" style="flex:1 1 100%"><input id="se" type="email" placeholder="Email" style="flex:1 1 100%"><input id="sp" type="password" placeholder="Password (8+ characters)" style="flex:1 1 100%"><button class="pri" style="flex:1 1 100%" onclick="doUp()">Create account</button></div>`}</div></div>`}
+async function doLogin(){const{error}=await sb.auth.signInWithPassword({email:$("le").value.trim(),password:$("lp").value});
+if(error){amsg=/fetch|network/i.test(error.message)?"Cannot reach the server. Check your internet connection.":/confirm/i.test(error.message)?"This email is not confirmed yet. Ask the admin to fix your login.":"Email or password is incorrect.";return render()}amsg="";tab="home";child="all";boot()}
+async function doUp(){const n=$("sn").value.trim(),e=$("se").value.trim(),p=$("sp").value;
+if(!n||!e||p.length<8){amsg="Enter your name, a valid email and a password of 8+ characters.";return render()}
+const{data,error}=await sb.auth.signUp({email:e,password:p,options:{data:{full_name:n}}});
+if(error){amsg=error.message;return render()}
+if(data.session)return boot();mode="in";amsg="Account created. Confirm your email if you receive a message, then wait for academy approval.";render()}
+async function forgot(){const e=$("le").value.trim();if(!e){amsg="Type your email above first.";return render()}
+await sb.auth.resetPasswordForEmail(e,{redirectTo:location.href.split("#")[0]});amsg="If that email has an account, a reset link has been sent.";render()}
+const logout=async()=>{await sb.auth.signOut();U=null;P=null;render()};
+
+/* ---------- layout ---------- */
+function shell(b){return `<header><div class="in"><span class="brand">Darul Huffaz Academy</span><span class="who">${esc(P?P.full_name:U.email)}${P?` (${P.role})`:""}<br><button class="sm" onclick="logout()">Log out</button></span></div></header><div class="wrap">${b}</div>`}
+function render(){const a=$("app");
+if(!U){a.innerHTML=authView();return}
+if(!P){a.innerHTML=shell(`<div class="card"><h2>Profile not found</h2><p class="mu">Log out and sign in again. If this stays, ask the academy to check your account.</p></div>`);return}
+if(P.status!=="active"){a.innerHTML=shell(`<div class="card"><h2>${P.status==="pending"?"Waiting for approval":"Account suspended"}</h2><p>${P.status==="pending"?"The academy has not activated your account yet. Please check again later.":"Please contact the academy."}</p><button class="pri" onclick="boot()">Check again</button></div>`);return}
+if(!D.cls){a.innerHTML=shell("<p class='mu'>Loading…</p>");return}
+const nav=`<nav class="tabs">${TABS[P.role].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()">${t[1]}</button>`).join("")}</nav>`;
+a.innerHTML=shell(nav+view())}
+function view(){const r=P.role;
+if(tab==="home")return r==="admin"||r==="principal"?overview():r==="teacher"?teacherHome():r==="parent"?parentHome():studentHome();
+return {users,classes,students:studentsTab,notices,audit}[tab]()}
+
+/* ---------- shared pieces ---------- */
+const cname=id=>(D.cls.find(c=>c.id===id)||{}).name||"No class";
+const pname=id=>(D.prof.find(p=>p.id===id)||{}).full_name||"Unknown";
+const attPct=s=>{const a=D.att.filter(x=>x.student_id===s.id);return a.length?Math.round(a.filter(x=>x.present).length/a.length*100):null};
+const dueOf=s=>D.fee.filter(f=>f.student_id===s.id).reduce((a,f)=>a+Number(f.amount_due)-Number(f.amount_paid),0);
+
+function stuCard(s,m){const ed=m==="teacher"||m==="admin",ap=attPct(s),td=D.att.find(x=>x.student_id===s.id&&x.date===today()),due=dueOf(s),
+rs=D.res.filter(r=>r.student_id===s.id),h=D.hf.find(x=>x.student_id===s.id),fees=D.fee.filter(f=>f.student_id===s.id),
+as=D.asg.filter(a=>a.class_id===s.class_id),links=D.ps.filter(l=>l.student_id===s.id);
+return `<div class="card"><div class="row"><h3>${esc(s.full_name)}</h3><span><span class="tag">${esc(cname(s.class_id))}</span> <span class="tag ${due>0?"u":""}">${due>0?due+" due":"Fees clear"}</span></span></div>
+<div class="row"><span class="mu">Attendance: ${ap===null?"no records yet":ap+"%"}</span>${ed?`<span><button class="sm ${td&&td.present?"on":""}" onclick="mark('${s.id}',true)">Present today</button> <button class="sm ${td&&!td.present?"on":""}" onclick="mark('${s.id}',false)">Absent today</button></span>`:`<span class="mu">Today: ${td?(td.present?"Present":"Absent"):"not marked"}</span>`}</div>
+<div class="bar"><i style="width:${ap||0}%"></i></div>
+${rs.map(r=>`<div class="row"><span>${esc(r.subject)} <span class="mu">${esc(r.term)}</span></span>${ed?`<input type="number" min="0" max="100" value="${r.marks}" style="width:80px" onchange="run(sb.from('results').update({marks:+this.value}).eq('id','${r.id}'),'Result saved')">`:`<b>${r.marks}%</b>`}</div><div class="bar"><i style="width:${r.marks}%"></i></div>`).join("")||'<p class="mu">No results yet.</p>'}
+${ed?`<div class="f"><input id="rs${s.id}" placeholder="Subject"><input id="rt${s.id}" placeholder="Term" style="width:90px;flex:0 1 90px"><input id="rm${s.id}" type="number" placeholder="Marks" style="width:80px;flex:0 1 80px"><button class="sm pri" onclick="addRes('${s.id}')">Add result</button></div>`:""}
+<hr>${ed?`<div class="mu">Hifz log for today</div><div class="f"><input id="h1${s.id}" placeholder="Sabaq" value="${esc(h?h.sabaq:"")}"><input id="h2${s.id}" placeholder="Sabqi" value="${esc(h?h.sabqi:"")}"><input id="h3${s.id}" placeholder="Manzil" value="${esc(h?h.manzil:"")}"><button class="sm pri" onclick="saveH('${s.id}')">Save Hifz log</button></div>`
+:h?`<div class="row"><span class="mu">Sabaq</span><span>${esc(h.sabaq)}</span></div><div class="row"><span class="mu">Sabqi</span><span>${esc(h.sabqi)}</span></div><div class="row"><span class="mu">Manzil</span><span>${esc(h.manzil)}</span></div>`:'<p class="mu">No Hifz log yet.</p>'}
+${as.length?`<hr><div class="mu">Assignments</div>${as.map(a=>`<div class="row"><span>${esc(a.title)}</span><span class="mu">Due ${esc(a.due_date||"TBA")}</span></div>`).join("")}`:""}
+${m==="admin"?adminBits(s,links,fees):""}</div>`}
+
+function adminBits(s,links,fees){const par=D.prof.filter(p=>p.role==="parent"&&p.status==="active");
+return `<hr><div class="mu">Linked parents</div>${links.map(l=>`<div class="row"><span>${esc(pname(l.parent_id))}</span><button class="sm dng" onclick="run(sb.from('parent_students').delete().match({parent_id:'${l.parent_id}',student_id:'${s.id}'}),'Unlinked')">Unlink</button></div>`).join("")||'<p class="mu">None yet.</p>'}
+<div class="f"><select id="lk${s.id}">${par.map(p=>`<option value="${p.id}">${esc(p.full_name)}</option>`).join("")}</select><button class="sm pri" onclick="link('${s.id}')">Link parent</button></div>
+<hr><div class="mu">Fees</div>${fees.map(f=>`<div class="row"><span>${esc(f.month)}: ${f.amount_due} due</span><span>paid <input type="number" value="${f.amount_paid}" style="width:90px" onchange="run(sb.from('fees').update({amount_paid:+this.value}).eq('id','${f.id}'),'Fee updated')"></span></div>`).join("")}
+<div class="f"><input id="fm${s.id}" placeholder="Month, e.g. Nov 2026"><input id="fd${s.id}" type="number" placeholder="Amount due" style="width:110px;flex:0 1 110px"><button class="sm pri" onclick="addFee('${s.id}')">Add fee</button></div>`}
+
+const mark=(id,p)=>run(sb.from("attendance").upsert({student_id:id,date:today(),present:p},{onConflict:"student_id,date"}),"Attendance saved");
+function addRes(id){const s=$("rs"+id).value.trim(),t=$("rt"+id).value.trim(),m=$("rm"+id).value;if(!s||!t||m==="")return toast("Enter subject, term and marks");run(sb.from("results").insert({student_id:id,subject:s,term:t,marks:+m}),"Result added")}
+function saveH(id){const o={sabaq:$("h1"+id).value,sabqi:$("h2"+id).value,manzil:$("h3"+id).value},ex=D.hf.find(x=>x.student_id===id&&x.date===today());
+run(ex?sb.from("hifz_logs").update(o).eq("id",ex.id):sb.from("hifz_logs").insert({...o,student_id:id}),"Hifz log saved")}
+const link=id=>{const p=$("lk"+id).value;if(!p)return toast("No active parent accounts yet");run(sb.from("parent_students").insert({parent_id:p,student_id:id}),"Parent linked")};
+function addFee(id){const m=$("fm"+id).value.trim(),d=$("fd"+id).value;if(!m||d==="")return toast("Enter month and amount");run(sb.from("fees").insert({student_id:id,month:m,amount_due:+d}),"Fee added")}
+
+/* ---------- role homes ---------- */
+function overview(){const out=D.stu.reduce((a,s)=>a+dueOf(s),0);
+return `<h2>School overview</h2><div class="grid"><div class="card"><div class="stat">${D.stu.length}</div><div class="mu">Students</div></div><div class="card"><div class="stat">${D.prof.filter(p=>p.role==="teacher"&&p.status==="active").length}</div><div class="mu">Active teachers</div></div><div class="card"><div class="stat">${D.prof.filter(p=>p.status==="pending").length}</div><div class="mu">Accounts waiting for approval</div></div><div class="card"><div class="stat">${out}</div><div class="mu">Fees outstanding</div></div></div>`}
+function teacherHome(){const mine=D.cls.filter(c=>c.teacher_id===U.id);
+return `<h2>My class</h2>${mine.length?"":'<p class="mu">No class is assigned to you yet. Ask the admin to assign one.</p>'}${D.stu.map(s=>stuCard(s,"teacher")).join("")}
+${mine.length?`<div class="card"><h3>Post an assignment</h3><div class="f"><select id="ac">${mine.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select><input id="at" placeholder="Title"><input id="ad" type="date"><button class="pri" onclick="addAsg()">Post assignment</button></div></div>`:""}`}
+function addAsg(){const t=$("at").value.trim();if(!t)return toast("Add a title");run(sb.from("assignments").insert({class_id:$("ac").value,title:t,due_date:$("ad").value||null}),"Assignment posted")}
+function parentHome(){const k=D.stu;if(!k.length)return `<h2>My children</h2><p class="mu">No children are linked to your account yet. Ask the academy to link them.</p>`;
+const tot=k.reduce((a,s)=>a+dueOf(s),0);
+return `<h2>My children</h2><div class="chips"><button class="${child==="all"?"on":""}" onclick="child='all';render()">All children</button>${k.map(s=>`<button class="${child===s.id?"on":""}" onclick="child='${s.id}';render()">${esc(s.full_name.split(" ")[0])}</button>`).join("")}</div>`+
+(child==="all"||!k.find(s=>s.id===child)?`<div class="card"><div class="row"><span>Total fees due, all children</span><span class="stat">${tot}</span></div></div><div class="grid">${k.map(s=>{const a=attPct(s);return `<div class="card"><h3>${esc(s.full_name)}</h3><div class="mu">${esc(cname(s.class_id))}</div><p>Attendance: ${a===null?"no records":a+"%"}<br>${dueOf(s)>0?dueOf(s)+" due":"Fees clear"}</p><button class="sm" onclick="child='${s.id}';render()">Open ${esc(s.full_name.split(" ")[0])}’s page</button></div>`}).join("")}</div>`:stuCard(k.find(s=>s.id===child),"view"))}
+const studentHome=()=>`<h2>My progress</h2>${D.stu.map(s=>stuCard(s,"view")).join("")||'<p class="mu">Your student record is not linked yet. Ask the academy.</p>'}`;
+
+/* ---------- admin and principal ---------- */
+const setP=(id,o)=>run(sb.from("profiles").update(o).eq("id",id),"Account updated");
+function usersOld(){const adm=P.role==="admin",l=D.prof.filter(p=>adm||p.role==="teacher");
+return `<h2>${adm?"All accounts":"Teacher accounts"}</h2><p class="mu">People create their own account on the sign-up page. Approve them here${adm?" and set their role":""}.</p><div class="card">${l.map(p=>`<div class="row"><span>${esc(p.full_name||"(no name)")} <span class="tag ${p.status==="pending"?"g":p.status==="suspended"?"u":""}">${p.status}</span></span>${p.id===U.id?'<span class="mu">You</span>':`<span>${adm?`<select onchange="setP('${p.id}',{role:this.value})">${ROLES.map(x=>`<option ${x===p.role?"selected":""}>${x}</option>`).join("")}</select> `:""}${p.status==="active"?`<button class="sm dng" onclick="setP('${p.id}',{status:'suspended'})">Suspend</button>`:`<button class="sm pri" onclick="setP('${p.id}',{status:'active'})">${p.status==="pending"?"Approve":"Reactivate"}</button>`}</span>`}</div>`).join("")||'<span class="mu">No accounts yet.</span>'}</div>`}
+let editU=null;
+async function fn(body){const{data,error}=await sb.functions.invoke("admin-users",{body});if(error){let m=error.message;try{m=(await error.context.json()).error||m}catch(e){}return{error:m}}return data||{}}
+function createUser(){return `<details class="card"><summary><b>Create an account</b></summary><div class="f"><input id="xn" placeholder="Full name"><input id="xe" type="email" placeholder="Email"><input id="xp" type="text" placeholder="Password (8+)"><select id="xr">${ROLES.map(x=>`<option ${x==="teacher"?"selected":""}>${x}</option>`).join("")}</select><button class="pri" onclick="makeUser()">Create account</button></div><p class="mu" style="margin-bottom:0">The account is active at once and needs no email confirmation.</p></details>`}
+async function makeUser(){const n=$("xn").value.trim(),e=$("xe").value.trim(),p=$("xp").value,r=$("xr").value;if(!n||!e||p.length<8)return toast("Enter a name, email and an 8+ character password");
+const x=await fn({action:"create",full_name:n,email:e,password:p,role:r});if(x.error)return toast("Error: "+x.error);await load();render();toast("Account created")}
+async function saveLogin(id){const e=$("ue").value.trim(),p=$("up").value;if(p&&p.length<8)return toast("Password must be 8+ characters");
+const x=await fn({action:"update",id,email:e,password:p});if(x.error)return toast("Error: "+x.error);editU=null;await load();render();toast("Login updated")}
+function users(){const adm=P.role==="admin",l=D.prof.filter(p=>adm||p.role==="teacher");
+return `<h2>${adm?"All accounts":"Teacher accounts"}</h2>${adm&&D.mail===null?'<p class="mu" style="color:var(--go)">Emails and password resets are not switched on yet. Deploy the admin-users function in Supabase, then refresh.</p>':""}${adm?createUser():""}<div class="card">${l.map(p=>{const em=D.mail&&D.mail[p.id],me=p.id===U.id;
+return `<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><div class="row"><span>${esc(p.full_name||"(no name)")} <span class="tag ${p.status==="pending"?"g":p.status==="suspended"?"u":""}">${p.status}</span>${em?`<br><span class="mu">${esc(em)}</span>`:""}</span><span>${me?'<span class="mu">You</span> ':adm?`<select onchange="setP('${p.id}',{role:this.value})">${ROLES.map(x=>`<option ${x===p.role?"selected":""}>${x}</option>`).join("")}</select> `:""}${me?"":p.status==="active"?`<button class="sm dng" onclick="setP('${p.id}',{status:'suspended'})">Suspend</button>`:`<button class="sm pri" onclick="setP('${p.id}',{status:'active'})">${p.status==="pending"?"Approve":"Reactivate"}</button>`}${adm&&D.mail?` <button class="sm" onclick="editU='${p.id}';render()">Edit login</button>`:""}</span></div>${editU===p.id?`<div class="f"><input id="ue" type="email" value="${esc(em||"")}" placeholder="Email"><input id="up" type="text" placeholder="New password (8+), empty keeps old"><button class="sm pri" onclick="saveLogin('${p.id}')">Save login</button><button class="sm" onclick="editU=null;render()">Cancel</button></div>`:""}</div>`}).join("")||'<span class="mu">No accounts yet.</span>'}</div>`}
+function classes(){const T=D.prof.filter(p=>p.role==="teacher"&&p.status==="active"),to=sel=>`<option value="">No teacher</option>`+T.map(t=>`<option value="${t.id}" ${t.id===sel?"selected":""}>${esc(t.full_name)}</option>`).join("");
+return `<h2>Classes</h2><div class="card">${D.cls.map(c=>`<div class="row"><b>${esc(c.name)}</b><select onchange="run(sb.from('classes').update({teacher_id:this.value||null}).eq('id','${c.id}'),'Teacher assigned')">${to(c.teacher_id)}</select></div>`).join("")||'<span class="mu">No classes yet. Add one below.</span>'}</div><div class="card"><h3>Add a class</h3><div class="f"><input id="cn" placeholder="Class name"><select id="ct">${to("")}</select><button class="pri" onclick="addCls()">Add class</button></div></div>`}
+function addCls(){const n=$("cn").value.trim();if(!n)return toast("Enter a class name");run(sb.from("classes").insert({name:n,teacher_id:$("ct").value||null}),"Class added")}
+function studentsTab(){const adm=P.role==="admin",S=D.prof.filter(p=>p.role==="student");
+return `<h2>Students</h2>${adm?`<div class="card"><h3>Add a student</h3><div class="f"><input id="sn2" placeholder="Student full name"><select id="sc">${D.cls.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select><select id="sl"><option value="">No student login</option>${S.map(p=>`<option value="${p.id}">${esc(p.full_name)}</option>`).join("")}</select><button class="pri" onclick="addStu()">Add student</button></div></div>`:'<p class="mu">Read-only for principals.</p>'}${D.stu.map(s=>stuCard(s,adm?"admin":"view")).join("")||'<p class="mu">No students yet.</p>'}`}
+function addStu(){const n=$("sn2").value.trim();if(!n)return toast("Enter the student’s name");run(sb.from("students").insert({full_name:n,class_id:$("sc").value||null,profile_id:$("sl").value||null}),"Student added")}
+
+/* ---------- notices, events, audit ---------- */
+function notices(){const r=P.role,post=["admin","principal","teacher"].includes(r),mc=r==="teacher"?D.cls.filter(c=>c.teacher_id===U.id):D.cls,staff=r==="admin"||r==="principal",
+au=a=>a.audience==="class"?"Class: "+cname(a.class_id):{all:"Everyone",parents:"Parents",teachers:"Teachers"}[a.audience];
+return `<h2>Announcements</h2>${D.ann.map(a=>`<div class="card"><div class="row"><h3>${esc(a.title)}</h3><span class="tag">${esc(au(a))}</span></div><p style="margin:0 0 4px">${esc(a.body||"")}</p><span class="mu">${new Date(a.created_at).toLocaleDateString()}</span>${staff?` <button class="sm dng" onclick="run(sb.from('announcements').delete().eq('id','${a.id}'),'Deleted')">Delete</button>`:""}</div>`).join("")||'<p class="mu">No announcements yet.</p>'}
+${post&&(staff||mc.length)?`<div class="card"><h3>Post an announcement</h3><div class="f"><input id="nt" placeholder="Title"><select id="na">${staff?'<option value="all">Everyone</option><option value="parents">Parents only</option><option value="teachers">Teachers only</option>':""}<option value="class">A class</option></select><select id="nc">${mc.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div><div class="f"><textarea id="nm" rows="2" placeholder="Message" style="flex:1 1 100%"></textarea><button class="pri" onclick="addN()">Post announcement</button></div></div>`:""}
+<h2>Events</h2>${D.ev.map(e=>{const d=new Date(e.starts_at);return `<div class="card ev"><div class="dt">${d.toLocaleString("en",{month:"short"})}<br>${d.getDate()}</div><div><b>${esc(e.title)}</b><div class="mu">${d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${esc(e.location||"TBA")}</div></div></div>`}).join("")||'<p class="mu">No events yet.</p>'}
+${staff?`<div class="card"><h3>Add an event</h3><div class="f"><input id="et" placeholder="Event title"><input id="ed" type="datetime-local"><input id="el" placeholder="Location"><button class="pri" onclick="addE()">Add event</button></div></div>`:""}`}
+function addN(){const t=$("nt").value.trim();if(!t)return toast("Add a title");const a=$("na").value;
+run(sb.from("announcements").insert({title:t,body:$("nm").value,audience:a,class_id:a==="class"?$("nc").value:null}),"Announcement posted")}
+function addE(){const t=$("et").value.trim(),d=$("ed").value;if(!t||!d)return toast("Add a title and date");run(sb.from("events").insert({title:t,starts_at:new Date(d).toISOString(),location:$("el").value}),"Event added")}
+const audit=()=>`<h2>Audit log</h2><p class="mu">Every change, with who made it. Nobody can edit or delete these entries.</p><div class="card">${D.aud.map(a=>`<div class="row"><span>${esc(a.action)} in ${esc(a.table_name)}</span><span class="mu">${esc(pname(a.actor))}, ${new Date(a.at).toLocaleString()}</span></div>`).join("")||'<span class="mu">No changes recorded yet.</span>'}</div>`;
+
+boot();
+</script>
+</body>
+</html>
